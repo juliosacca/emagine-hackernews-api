@@ -1,0 +1,6 @@
+@EmagineHackerNewsApi_HostAddress = http://localhost:5049
+
+GET {{EmagineHackerNewsApi_HostAddress}}/weatherforecast/
+Accept: application/json
+
+###
