@@ -1,3 +1,4 @@
+using EmagineHackerNewsApi.Services;
 using System.Net;
 
 
@@ -19,6 +20,24 @@ builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
+
+builder.Services.AddHttpClient("HackerNewsClient", client =>
+{
+    var baseUrl = builder.Configuration.GetValue<string>("HackerNewsApi:BaseUrl");
+    if (string.IsNullOrEmpty(baseUrl))
+    {
+        throw new InvalidOperationException("The configuration value for 'HackerNewsApi:BaseUrl' is missing or null.");
+    }
+    client.BaseAddress = new Uri(baseUrl);
+}).ConfigurePrimaryHttpMessageHandler(() =>
+{
+    return new HttpClientHandler
+    {
+        ServerCertificateCustomValidationCallback = (message, cert, chain, errors) => true
+    };
+});
+
+builder.Services.AddScoped<IStoriesService, StoriesService>();
 var app = builder.Build();
 
 // Configure the HTTP request pipeline.
