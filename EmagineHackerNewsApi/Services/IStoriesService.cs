@@ -1,8 +1,9 @@
-﻿using EmagineHackerNewsApi.Models;
+﻿using EmagineHackerNewsApi.DTOs;
+using EmagineHackerNewsApi.Models;
 
 namespace EmagineHackerNewsApi.Services;
 
 public interface IStoriesService
 {
-    Task<ResponseId> GetBestStoriesAsync(int qtdStories, CancellationToken cancellationToken = default);
+    Task<List<StoryDto>> GetBestStoriesAsync(int qtdStories, CancellationToken cancellationToken = default);
 }

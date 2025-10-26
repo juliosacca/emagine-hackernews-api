@@ -1,10 +1,7 @@
 using EmagineHackerNewsApi.Services;
-using System.Net;
-
+using System.Reflection;
 
 var builder = WebApplication.CreateBuilder(args);
-
-ServicePointManager.SecurityProtocol = SecurityProtocolType.Tls12;
 
 // Add services to the container.
 builder.Services.AddCors(options =>
@@ -18,8 +15,13 @@ builder.Services.AddCors(options =>
 });
 builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
-builder.Services.AddSwaggerGen();
-
+builder.Services.AddSwaggerGen(c =>
+{
+    var xmlFile = $"{Assembly.GetExecutingAssembly().GetName().Name}.xml";
+    var xmlPath = Path.Combine(AppContext.BaseDirectory, xmlFile);
+    c.IncludeXmlComments(xmlPath);
+});
+builder.Services.AddLazyCache();
 
 builder.Services.AddHttpClient("HackerNewsClient", client =>
 {
@@ -33,7 +35,8 @@ builder.Services.AddHttpClient("HackerNewsClient", client =>
 {
     return new HttpClientHandler
     {
-        ServerCertificateCustomValidationCallback = (message, cert, chain, errors) => true
+        SslProtocols = System.Security.Authentication.SslProtocols.Tls12,
+        ServerCertificateCustomValidationCallback = HttpClientHandler.DangerousAcceptAnyServerCertificateValidator
     };
 });
 

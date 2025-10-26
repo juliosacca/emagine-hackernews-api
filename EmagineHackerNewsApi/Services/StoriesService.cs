@@ -1,46 +1,62 @@
-﻿using EmagineHackerNewsApi.Models;
+﻿using EmagineHackerNewsApi.DTOs;
+using EmagineHackerNewsApi.Models;
+using LazyCache;
 
 namespace EmagineHackerNewsApi.Services
 {
     public class StoriesService : IStoriesService
     {
         private readonly HttpClient _client;
+        private readonly IAppCache _cache;
 
-        public StoriesService(IHttpClientFactory clientFactory)
+        public StoriesService(IHttpClientFactory clientFactory, IAppCache cache)
         {
             _client = clientFactory.CreateClient("HackerNewsClient");
+            _cache = cache;
         }
 
-        public async Task<ResponseId> GetBestStoriesAsync(int qtdStories, CancellationToken cancellationToken = default)
+        private async Task<Story?> GetStoryByIdAsync(int id, CancellationToken cancellationToken)
         {
-            var ids = await _client.GetFromJsonAsync<List<int>>($"beststories.json?print=pretty", cancellationToken);
+            // Cache the list of stories for 30 minutes
+            return await _cache.GetOrAddAsync($"story_{id}", async () =>
+            {
+                return await _client.GetFromJsonAsync<Story>($"item/{id}.json?print=pretty");
+            }, TimeSpan.FromMinutes(30));
+        }
+
+        public async Task<List<StoryDto>> GetBestStoriesAsync(int qtdStories, CancellationToken cancellationToken = default)
+        {
+            // Cache the list of IDs for 30 seconds
+            var ids = await _cache.GetOrAddAsync("beststories_ids", async () =>
+            {
+                return await _client.GetFromJsonAsync<List<int>>("beststories.json?print=pretty", cancellationToken);
+            }, TimeSpan.FromSeconds(30));
 
             if (ids == null || ids.Count == 0)
             {
-                return new ResponseId();
+                return new List<StoryDto>();
             }
 
-            //var tasks = ids.Select(async id => await GetStoryByIdAsync(id));
+            // Fetch more stories than requested to ensure enough valid ones are available
+            var tasks = ids.Take(qtdStories * 2).Select(id => GetStoryByIdAsync(id, cancellationToken));
+            var stories = await Task.WhenAll(tasks);
 
-            //var stories = (await Task.WhenAll(tasks)).Where(s => s != null).Cast<Story>().ToList();
-
-            // var filteredStories = string.IsNullOrEmpty(query)
-            //     ? stories
-            //     : stories.Where(s => !string.IsNullOrEmpty(s.Title) && s.Title.Contains(query, StringComparison.OrdinalIgnoreCase));
-
-            //var paginatedStories = filteredStories.Skip((page - 1) * pageSize).Take(pageSize);
-            return new ResponseId()
+            // Filter, sort, and transform the stories into DTOs
+            return stories
+            .Where(s => s != null)
+            .OrderByDescending(s => s.Score)
+            .Take(qtdStories)
+            .Select(s => new StoryDto
             {
-                Total = ids.Count(),
-                //Page = page,
-                //PageSize = pageSize,
-                // Stories = paginatedStories
-                Id = ids
-            };
-
+                Title = s.Title,
+                Uri = s.Url,
+                PostedBy = s.By,
+                Time = DateTimeOffset.FromUnixTimeSeconds(s.Time).UtcDateTime.ToString("o"),
+                Score = s.Score,
+                CommentCount = s.Descendants
+            })
+            .ToList();
         }
-        
     }
-
 }
 
