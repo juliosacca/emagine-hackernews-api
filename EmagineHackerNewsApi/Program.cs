@@ -4,8 +4,6 @@ using System.Reflection;
 
 var builder = WebApplication.CreateBuilder(args);
 
-ServicePointManager.SecurityProtocol = SecurityProtocolType.Tls12;
-
 // Add services to the container.
 builder.Services.AddCors(options =>
 {
