@@ -227,15 +227,15 @@
         },
         "runtime": {
           "lib/netcoreapp2.1/_._": {}
-        }
+      }
       },
       "System.Runtime.CompilerServices.Unsafe/4.5.0": {
         "type": "package",
         "compile": {
           "ref/netstandard2.0/System.Runtime.CompilerServices.Unsafe.dll": {
             "related": ".xml"
-          }
-        },
+    }
+  },
         "runtime": {
           "lib/netcoreapp2.0/System.Runtime.CompilerServices.Unsafe.dll": {
             "related": ".xml"
